@@ -90,11 +90,20 @@ class Command(BaseCommand):
                     offer.save()
                     updated_count += 1
 
-                PriceSnapshot.objects.create(
-                    offer=offer,
-                    price=item['price'],
-                    is_available=item.get('is_available', True),
-                )
+                price = item['price']
+                is_available = item.get('is_available', True)
+                last_snapshot = offer.snapshots.first()
+
+                if (
+                    last_snapshot is None
+                    or last_snapshot.price != price
+                    or last_snapshot.is_available != is_available
+                ):
+                    PriceSnapshot.objects.create(
+                        offer=offer,
+                        price=price,
+                        is_available=is_available,
+                    )
             except Exception:
                 logger.exception('Ошибка сохранения товара "%s"', item.get('name'))
                 continue

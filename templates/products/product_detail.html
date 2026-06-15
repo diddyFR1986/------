@@ -17,7 +17,19 @@
     <tr><th>Объём</th><td>{{ module.capacity_gb }} ГБ</td></tr>
     <tr><th>Тип памяти</th><td>{{ module.memory_type|default:"—" }}</td></tr>
     <tr><th>Частота</th><td>{{ module.frequency_mhz|default:"—" }} МГц</td></tr>
-    <tr><th>Лучшая цена</th><td>{{ module.latest_price|default:"—" }} ₽</td></tr>
+    <tr>
+        <th>Лучшая цена</th>
+        <td>
+            {{ module.latest_price|default:"—" }} ₽
+            {% with trend=module.price_trend %}
+                {% if trend.direction == 'down' %}
+                    <span class="price-trend price-trend-down ms-2">▼ {{ trend.percent|floatformat:1 }}%</span>
+                {% elif trend.direction == 'up' %}
+                    <span class="price-trend price-trend-up ms-2">▲ {{ trend.percent|floatformat:1 }}%</span>
+                {% endif %}
+            {% endwith %}
+        </td>
+    </tr>
 </table>
 
 <h2>Предложения магазинов</h2>

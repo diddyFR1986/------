@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Сравнение модулей — Мониторинг ОЗУ{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Сравнение модулей ОЗУ</h1>
+
+{% if error %}
+    <p class="text-muted">{{ error }}</p>
+    <a href="{% url 'products:product_list' %}" class="btn btn-outline-primary">Назад к каталогу</a>
+{% else %}
+<div class="table-responsive">
+<table class="table table-bordered align-middle bg-white">
+    <thead>
+        <tr>
+            <th></th>
+            {% for module in modules %}
+            <th style="min-width: 200px;">
+                {% if module.image_url %}
+                    <img src="{{ module.image_url }}" alt="{{ module.name }}" style="max-height: 80px; max-width: 100%; object-fit: contain;"><br>
+                {% endif %}
+                <a href="{% url 'products:product_detail' module.pk %}">{{ module.name }}</a>
+            </th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th>Бренд</th>
+            {% for module in modules %}<td>{{ module.brand }}</td>{% endfor %}
+        </tr>
+        <tr>
+            <th>Объём</th>
+            {% for module in modules %}<td>{{ module.capacity_gb }} ГБ</td>{% endfor %}
+        </tr>
+        <tr>
+            <th>Тип памяти</th>
+            {% for module in modules %}<td>{{ module.memory_type|default:"—" }}</td>{% endfor %}
+        </tr>
+        <tr>
+            <th>Частота</th>
+            {% for module in modules %}<td>{{ module.frequency_mhz|default:"—" }} МГц</td>{% endfor %}
+        </tr>
+        <tr>
+            <th>Лучшая цена</th>
+            {% for module in modules %}<td><strong>{{ module.latest_price|default:"—" }} ₽</strong></td>{% endfor %}
+        </tr>
+        {% for row in marketplace_rows %}
+        <tr>
+            <th>{{ row.marketplace.name }}</th>
+            {% for price in row.cells %}
+                <td>{% if price %}{{ price }} ₽{% else %}—{% endif %}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+<a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">Назад к каталогу</a>
+{% endif %}
+{% endblock %}

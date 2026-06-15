@@ -59,11 +59,11 @@ class RAMModule(models.Model):
         best = None
         best_price = None
         for offer in self.offers.all():
-            snapshot = offer.snapshots.first()
-            if not snapshot or not snapshot.is_available:
+            snapshots = list(offer.snapshots.all())
+            if not snapshots or not snapshots[0].is_available:
                 continue
-            if best_price is None or snapshot.price < best_price:
-                best_price = snapshot.price
+            if best_price is None or snapshots[0].price < best_price:
+                best_price = snapshots[0].price
                 best = offer
         return best
 
@@ -72,6 +72,12 @@ class RAMModule(models.Model):
         """Минимальная актуальная цена среди всех предложений."""
         best = self.best_offer
         return best.latest_price if best else None
+
+    @property
+    def price_trend(self):
+        """Изменение цены лучшего предложения по сравнению с предыдущим снимком."""
+        best = self.best_offer
+        return best.price_trend if best else None
 
 
 class Offer(models.Model):
@@ -100,8 +106,21 @@ class Offer(models.Model):
     @property
     def latest_price(self):
         """Последняя известная цена предложения."""
-        snapshot = self.snapshots.order_by('-scraped_at').first()
-        return snapshot.price if snapshot else None
+        snapshots = list(self.snapshots.all())
+        return snapshots[0].price if snapshots else None
+
+    @property
+    def price_trend(self):
+        """Изменение цены по сравнению с предыдущим снимком: {'direction': 'up'|'down', 'percent': Decimal} либо None."""
+        snapshots = list(self.snapshots.all())[:2]
+        if len(snapshots) < 2:
+            return None
+        latest, previous = snapshots
+        if not previous.price or latest.price == previous.price:
+            return None
+        diff = latest.price - previous.price
+        percent = abs(diff) / previous.price * 100
+        return {'direction': 'up' if diff > 0 else 'down', 'percent': percent}
 
 
 class PriceSnapshot(models.Model):

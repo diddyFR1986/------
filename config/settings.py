@@ -28,9 +28,9 @@ load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = 'django-insecure-3evf+sk68rosfkq^ujoa^+l@gg6t8xy92s_g81s#1f@6nadw=f'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["ramcompare.vercel.app"]
 
 
 # Application definition

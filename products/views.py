@@ -3,7 +3,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.core.management import call_command
 from django.core.paginator import Paginator
-from django.db.models import Count, F, OuterRef, Subquery
+from django.db.models import Count, F, OuterRef, Prefetch, Subquery
 from django.shortcuts import get_object_or_404, redirect, render
 
 from analytics.charts import price_history_chart
@@ -12,7 +12,7 @@ from .models import Marketplace, Offer, PriceSnapshot, RAMModule
 PAGE_SIZE_CHOICES = [25, 50, 100]
 DEFAULT_PAGE_SIZE = PAGE_SIZE_CHOICES[0]
 
-# Соответствие колонок таблицы и полей/аннотаций для order_by()
+# Соответствие пунктов сортировки и полей/аннотаций для order_by()
 SORT_FIELDS = {
     'name': 'name',
     'brand': 'brand',
@@ -22,6 +22,16 @@ SORT_FIELDS = {
     'offers_count': 'offers_count_annotated',
     'min_price': 'min_price',
 }
+
+# Пункты выпадающего списка сортировки карточек: (значение sort, подпись)
+SORT_OPTIONS = [
+    ('name', 'По названию (А-Я)'),
+    ('-name', 'По названию (Я-А)'),
+    ('min_price', 'Сначала дешевле'),
+    ('-min_price', 'Сначала дороже'),
+    ('-frequency_mhz', 'Сначала быстрее'),
+    ('-offers_count', 'Больше магазинов'),
+]
 
 
 def _parse_decimal(value):
@@ -81,6 +91,8 @@ def product_list(request):
     modules = modules.annotate(
         min_price=Subquery(cheapest_offer_price),
         offers_count_annotated=Subquery(offers_count_subquery),
+    ).prefetch_related(
+        Prefetch('offers__snapshots', queryset=PriceSnapshot.objects.order_by('-scraped_at'))
     )
 
     min_price_value = _parse_decimal(min_price)
@@ -101,16 +113,6 @@ def product_list(request):
     order_expr = order_field.desc(nulls_last=True) if sort_dir == 'desc' else order_field.asc(nulls_last=True)
     modules = modules.order_by(order_expr, 'id')
 
-    sort_links = {}
-    for column in SORT_FIELDS:
-        if column == sort_field:
-            sort_links[column] = {
-                'param': f'-{column}' if sort_dir == 'asc' else column,
-                'indicator': '▲' if sort_dir == 'asc' else '▼',
-            }
-        else:
-            sort_links[column] = {'param': column, 'indicator': ''}
-
     try:
         page_size = int(request.GET.get('page_size', DEFAULT_PAGE_SIZE))
     except ValueError:
@@ -124,16 +126,13 @@ def product_list(request):
     query_params = request.GET.copy()
     query_params.pop('page', None)
 
-    sort_query_params = query_params.copy()
-    sort_query_params.pop('sort', None)
-
     context = {
         'modules': page_obj,
         'page_obj': page_obj,
         'paginator': paginator,
         'query_params': query_params.urlencode(),
-        'sort_query_params': sort_query_params.urlencode(),
-        'sort_links': sort_links,
+        'sort_options': SORT_OPTIONS,
+        'selected_sort': sort_param,
         'page_size': page_size,
         'page_size_choices': PAGE_SIZE_CHOICES,
         'brands': RAMModule.objects.exclude(brand='').order_by('brand').values_list('brand', flat=True).distinct(),
@@ -164,6 +163,37 @@ def product_detail(request, pk):
         'chart_div': price_history_chart(module),
     }
     return render(request, 'products/product_detail.html', context)
+
+
+def compare(request):
+    """Сравнение 2-4 модулей ОЗУ по характеристикам и ценам на разных площадках."""
+    ids = [pk for pk in request.GET.getlist('ids') if pk.isdigit()]
+
+    modules_by_id = RAMModule.objects.filter(pk__in=ids).prefetch_related(
+        Prefetch('offers__snapshots', queryset=PriceSnapshot.objects.order_by('-scraped_at')),
+        'offers__marketplace',
+    ).in_bulk()
+    modules = [modules_by_id[int(pk)] for pk in ids if int(pk) in modules_by_id][:4]
+
+    error = None
+    if len(modules) < 2:
+        error = 'Выберите от 2 до 4 модулей в каталоге, чтобы сравнить их.'
+
+    marketplace_rows = []
+    if not error:
+        for marketplace in Marketplace.objects.filter(is_active=True):
+            cells = []
+            for module in modules:
+                offer = next((o for o in module.offers.all() if o.marketplace_id == marketplace.id), None)
+                cells.append(offer.latest_price if offer else None)
+            marketplace_rows.append({'marketplace': marketplace, 'cells': cells})
+
+    context = {
+        'modules': modules,
+        'marketplace_rows': marketplace_rows,
+        'error': error,
+    }
+    return render(request, 'products/compare.html', context)
 
 
 def trigger_scrape(request):

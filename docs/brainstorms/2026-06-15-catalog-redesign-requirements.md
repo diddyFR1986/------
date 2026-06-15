@@ -29,6 +29,9 @@ system already collects rather than introduce new models.
   a price-change indicator together.
 - **Custom color theme** — replace the default Bootstrap palette across
   `base.html` and templates that extend it, rather than swapping frameworks.
+  Light, minimal palette: page background `#f8fafc`, cards `#ffffff` with a
+  soft shadow, body text `#1e293b`, accent (links/buttons/badges) `#6366f1`,
+  price-down indicator `#16a34a`, price-up indicator `#dc2626`.
 - **Price-change indicator compares to the previous snapshot**, not a fixed
   time window (e.g. "last 7 days"). This matches how snapshots are now
   recorded (only on change) and avoids an extra date-range query.
