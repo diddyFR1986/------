@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}Товары — Мониторинг ОЗУ{% endblock %}
+
+{% block content %}
+<h1 class="mb-1">Модули ОЗУ</h1>
+<p class="text-muted mb-4">Найдено: {{ paginator.count }}</p>
+
+<form method="get" class="row gy-2 gx-2 align-items-end mb-4">
+    <div class="col-auto">
+        <label class="form-label">Название</label>
+        <input type="text" name="q" class="form-control" value="{{ search }}" placeholder="Поиск по названию">
+    </div>
+    <div class="col-auto">
+        <label class="form-label">Бренд</label>
+        <select name="brand" class="form-select">
+            <option value="">Все</option>
+            {% for brand in brands %}
+                <option value="{{ brand }}" {% if brand == selected_brand %}selected{% endif %}>{{ brand }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <label class="form-label">Тип памяти</label>
+        <select name="memory_type" class="form-select">
+            <option value="">Все</option>
+            {% for value, label in memory_types %}
+                <option value="{{ value }}" {% if value == selected_memory_type %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <label class="form-label">Объём, ГБ</label>
+        <select name="capacity" class="form-select">
+            <option value="">Все</option>
+            {% for capacity in capacities %}
+                <option value="{{ capacity }}" {% if capacity|stringformat:"s" == selected_capacity %}selected{% endif %}>{{ capacity }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <label class="form-label">Частота, МГц</label>
+        <select name="frequency" class="form-select">
+            <option value="">Все</option>
+            {% for frequency in frequencies %}
+                <option value="{{ frequency }}" {% if frequency|stringformat:"s" == selected_frequency %}selected{% endif %}>{{ frequency }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <label class="form-label">Площадка</label>
+        <select name="marketplace" class="form-select">
+            <option value="">Все</option>
+            {% for marketplace in marketplaces %}
+                <option value="{{ marketplace.id }}" {% if marketplace.id|stringformat:"s" == selected_marketplace %}selected{% endif %}>{{ marketplace.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <label class="form-label">Цена от</label>
+        <input type="number" name="min_price" class="form-control" value="{{ min_price }}" min="0" style="width: 6em;">
+    </div>
+    <div class="col-auto">
+        <label class="form-label">Цена до</label>
+        <input type="number" name="max_price" class="form-control" value="{{ max_price }}" min="0" style="width: 6em;">
+    </div>
+    <div class="col-auto">
+        <label class="form-label">На странице</label>
+        <select name="page_size" class="form-select">
+            {% for size in page_size_choices %}
+                <option value="{{ size }}" {% if size == page_size %}selected{% endif %}>{{ size }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Применить</button>
+        <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">Сбросить</a>
+    </div>
+</form>
+
+<table class="table table-striped table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Фото</th>
+            <th><a href="?{{ sort_query_params }}&sort={{ sort_links.name.param }}" class="text-decoration-none text-reset">Название {{ sort_links.name.indicator }}</a></th>
+            <th><a href="?{{ sort_query_params }}&sort={{ sort_links.brand.param }}" class="text-decoration-none text-reset">Бренд {{ sort_links.brand.indicator }}</a></th>
+            <th><a href="?{{ sort_query_params }}&sort={{ sort_links.capacity_gb.param }}" class="text-decoration-none text-reset">Объём {{ sort_links.capacity_gb.indicator }}</a></th>
+            <th><a href="?{{ sort_query_params }}&sort={{ sort_links.memory_type.param }}" class="text-decoration-none text-reset">Тип {{ sort_links.memory_type.indicator }}</a></th>
+            <th><a href="?{{ sort_query_params }}&sort={{ sort_links.frequency_mhz.param }}" class="text-decoration-none text-reset">Частота {{ sort_links.frequency_mhz.indicator }}</a></th>
+            <th><a href="?{{ sort_query_params }}&sort={{ sort_links.offers_count.param }}" class="text-decoration-none text-reset">Магазинов {{ sort_links.offers_count.indicator }}</a></th>
+            <th><a href="?{{ sort_query_params }}&sort={{ sort_links.min_price.param }}" class="text-decoration-none text-reset">Лучшая цена {{ sort_links.min_price.indicator }}</a></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for module in modules %}
+        <tr>
+            <td>
+                {% if module.image_url %}
+                    <img src="{{ module.image_url }}" alt="{{ module.name }}" class="img-thumbnail" style="max-width: 60px; max-height: 60px;">
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+            <td><a href="{% url 'products:product_detail' module.pk %}">{{ module.name }}</a></td>
+            <td>{{ module.brand }}</td>
+            <td>{{ module.capacity_gb }} ГБ</td>
+            <td>
+                {% if module.memory_type == 'DDR5' %}
+                    <span class="badge bg-primary">{{ module.memory_type }}</span>
+                {% elif module.memory_type == 'DDR4' %}
+                    <span class="badge bg-secondary">{{ module.memory_type }}</span>
+                {% elif module.memory_type %}
+                    <span class="badge bg-light text-dark">{{ module.memory_type }}</span>
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+            <td>{{ module.frequency_mhz|default:"—" }}</td>
+            <td>{{ module.offers_count_annotated }}</td>
+            <td>
+                {% if module.min_price %}{{ module.min_price|floatformat:0 }} ₽{% else %}—{% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="8" class="text-center text-muted">
+                Товары не найдены. Нажмите «Обновить данные», чтобы запустить парсинг.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if paginator.num_pages > 1 %}
+<nav aria-label="Страницы">
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?{{ query_params }}&page=1">«</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?{{ query_params }}&page={{ page_obj.previous_page_number }}">‹</a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">«</span></li>
+            <li class="page-item disabled"><span class="page-link">‹</span></li>
+        {% endif %}
+
+        <li class="page-item disabled">
+            <span class="page-link">Стр. {{ page_obj.number }} из {{ paginator.num_pages }}</span>
+        </li>
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?{{ query_params }}&page={{ page_obj.next_page_number }}">›</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?{{ query_params }}&page={{ paginator.num_pages }}">»</a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">›</span></li>
+            <li class="page-item disabled"><span class="page-link">»</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

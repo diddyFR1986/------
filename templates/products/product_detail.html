@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ module.name }} — Мониторинг ОЗУ{% endblock %}
+
+{% block content %}
+<p><a href="{% url 'products:product_list' %}">&larr; Назад к списку</a></p>
+
+<h1>{{ module.name }}</h1>
+
+{% if module.image_url %}
+    <img src="{{ module.image_url }}" alt="{{ module.name }}" class="img-thumbnail mb-3" style="max-width: 200px; max-height: 200px;">
+{% endif %}
+
+<table class="table table-sm w-auto mb-4">
+    <tr><th>Бренд</th><td>{{ module.brand }}</td></tr>
+    <tr><th>Артикул</th><td>{{ module.part_number|default:"—" }}</td></tr>
+    <tr><th>Объём</th><td>{{ module.capacity_gb }} ГБ</td></tr>
+    <tr><th>Тип памяти</th><td>{{ module.memory_type|default:"—" }}</td></tr>
+    <tr><th>Частота</th><td>{{ module.frequency_mhz|default:"—" }} МГц</td></tr>
+    <tr><th>Лучшая цена</th><td>{{ module.latest_price|default:"—" }} ₽</td></tr>
+</table>
+
+<h2>Предложения магазинов</h2>
+{% if offers %}
+<table class="table table-sm table-striped mb-4">
+    <thead>
+        <tr>
+            <th>Магазин</th>
+            <th>Цена</th>
+            <th>Ссылка</th>
+            <th>Обновлено</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for offer in offers %}
+        <tr>
+            <td>{{ offer.marketplace.name }}</td>
+            <td>{{ offer.latest_price|default:"—" }} ₽</td>
+            <td><a href="{{ offer.url }}" target="_blank">{{ offer.name }}</a></td>
+            <td>{{ offer.last_updated|date:"d.m.Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+    <p class="text-muted">Предложения не найдены.</p>
+{% endif %}
+
+<h2>История цены</h2>
+{% if chart_div %}
+    {{ chart_div|safe }}
+{% else %}
+    <p class="text-muted">Недостаточно данных для построения графика.</p>
+{% endif %}
+{% endblock %}
