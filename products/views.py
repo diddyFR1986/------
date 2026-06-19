@@ -228,26 +228,30 @@ def compare(request):
     marketplace_rows = []
     if not empty:
         for marketplace in Marketplace.objects.filter(is_active=True):
-            raw_prices = []
+            raw = []
             for module in modules:
                 offer = next(
                     (o for o in module.offers.all()
                      if o.marketplace_id == marketplace.id),
                     None,
                 )
-                raw_prices.append(offer.latest_price if offer else None)
-            existing = [p for p in raw_prices if p is not None]
+                raw.append(
+                    (offer.latest_price if offer else None,
+                     offer.url if offer else None)
+                )
+            existing = [p for p, _ in raw if p is not None]
             min_price_in_row = min(existing) if existing else None
             cells = [
                 {
                     'price': p,
+                    'url': u,
                     'is_best': (
                         p is not None
                         and p == min_price_in_row
                         and len(existing) > 1
                     ),
                 }
-                for p in raw_prices
+                for p, u in raw
             ]
             marketplace_rows.append(
                 {'marketplace': marketplace, 'cells': cells}

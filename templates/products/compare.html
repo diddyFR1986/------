@@ -132,9 +132,18 @@
                     {% for cell in row.cells %}
                         <td class="pl-compare-td{% if cell.is_best %} pl-compare-best-cell{% endif %}">
                             {% if cell.price %}
+                                {% if cell.url %}
+                                <a href="{{ cell.url }}" target="_blank" rel="noopener"
+                                   class="{% if cell.is_best %}pl-compare-best-price{% else %}pl-compare-price{% endif %}"
+                                   style="text-decoration:none">
+                                    {{ cell.price|floatformat:0 }} ₽
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="opacity:.5;vertical-align:middle;margin-left:2px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                </a>
+                                {% else %}
                                 <span class="{% if cell.is_best %}pl-compare-best-price{% else %}pl-compare-price{% endif %}">
                                     {{ cell.price|floatformat:0 }} ₽
                                 </span>
+                                {% endif %}
                             {% else %}
                                 <span class="pl-compare-none">—</span>
                             {% endif %}
