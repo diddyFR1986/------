@@ -223,12 +223,10 @@ def compare(request):
 
     modules = [modules_by_id[pk] for pk in valid_ids][:4]
 
-    error = None
-    if len(modules) < 2:
-        error = 'Выберите от 2 до 4 модулей в каталоге, чтобы сравнить их.'
+    empty = len(modules) == 0
 
     marketplace_rows = []
-    if not error:
+    if not empty:
         for marketplace in Marketplace.objects.filter(is_active=True):
             raw_prices = []
             for module in modules:
@@ -288,7 +286,7 @@ def compare(request):
         'best_freq_ids': best_freq_ids,
         'best_cap_ids': best_cap_ids,
         'best_cl_ids': best_cl_ids,
-        'error': error,
+        'empty': empty,
     }
     return render(request, 'products/compare.html', context)
 

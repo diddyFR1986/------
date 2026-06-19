@@ -3,31 +3,31 @@
 {% block title %}Сравнение модулей — Мониторинг ОЗУ{% endblock %}
 
 {% block content %}
-{% if error %}
+{% if empty %}
 <!-- Empty compare state -->
 <div style="max-width:480px">
     <h1 class="pl-page-title" style="margin-bottom:12px">Сравнение модулей</h1>
     <p style="font-size:var(--text-base);color:var(--ink-2);margin-bottom:20px;line-height:var(--lh-relaxed,1.6)">
         Выберите от 2 до 4 модулей в каталоге, чтобы сравнить их характеристики и цены по магазинам.
     </p>
-    <div style="display:flex;gap:8px">
-        <a href="{% url 'products:product_list' %}" class="pl-btn pl-btn--primary">Перейти в каталог</a>
-        <form method="post" action="{% url 'products:compare_clear' %}" style="display:inline">
-            {% csrf_token %}
-            <button type="submit" class="pl-btn pl-btn--danger">Очистить список</button>
-        </form>
-    </div>
+    <a href="{% url 'products:product_list' %}" class="pl-btn pl-btn--primary">Перейти в каталог</a>
 </div>
 {% else %}
 
 <!-- Header row -->
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:{% if modules|length < 2 %}12{% else %}20{% endif %}px;flex-wrap:wrap;gap:12px">
     <h1 class="pl-page-title">Сравнение модулей</h1>
     <form method="post" action="{% url 'products:compare_clear' %}">
         {% csrf_token %}
         <button type="submit" class="pl-btn pl-btn--danger pl-btn--sm">Очистить список</button>
     </form>
 </div>
+
+{% if modules|length < 2 %}
+<div class="pl-alert pl-alert--info" style="margin-bottom:20px">
+    Добавьте ещё один модуль из <a href="{% url 'products:product_list' %}">каталога</a>, чтобы начать сравнение.
+</div>
+{% endif %}
 
 <div class="pl-card" style="overflow:hidden">
     <div class="pl-compare-wrap">
