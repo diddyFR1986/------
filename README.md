@@ -41,7 +41,7 @@
 ### 1. Клонируйте репозиторий
 
 ```bash
-git clone https://github.com/Tvorozhnik/ram-price-observer.git
+git clone https://github.com/diddyFR1986/ram-price-observer.git
 cd ram-price-observer
 ```
 
