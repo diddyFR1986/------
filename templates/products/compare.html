@@ -91,9 +91,6 @@
                     {% for module in modules %}
                     <td class="pl-compare-td{% if module.pk in best_cap_ids %} pl-compare-best-cell{% endif %}">
                         <span style="font-family:var(--font-mono);font-size:var(--text-sm)">{{ module.capacity_gb }} ГБ</span>
-                        {% if module.pk in best_cap_ids %}
-                            <div style="margin-top:4px"><span class="pl-badge pl-badge--down">максимум</span></div>
-                        {% endif %}
                     </td>
                     {% endfor %}
                 </tr>
@@ -120,9 +117,6 @@
                     {% for module in modules %}
                     <td class="pl-compare-td{% if module.pk in cheapest_ids %} pl-compare-best-cell{% endif %}">
                         <span class="pl-price pl-price--lg">{% if module.latest_price %}{{ module.latest_price|floatformat:0 }} ₽{% else %}—{% endif %}</span>
-                        {% if module.pk in cheapest_ids %}
-                            <div style="margin-top:4px"><span class="pl-badge pl-badge--down">минимум</span></div>
-                        {% endif %}
                         {% with trend=module.price_trend %}
                             {% if trend.direction == 'down' %}
                                 <div><span class="price-trend price-trend-down">▼ {{ trend.percent|floatformat:1 }}%</span></div>
