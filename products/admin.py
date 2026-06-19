@@ -28,10 +28,14 @@ class OfferInline(admin.TabularInline):
 @admin.register(RAMModule)
 class RAMModuleAdmin(admin.ModelAdmin):
     list_display = (
-        'name', 'brand', 'part_number', 'capacity_gb', 'memory_type',
-        'frequency_mhz', 'offers_count', 'latest_price',
+        'name', 'brand', 'part_number', 'form_factor', 'capacity_gb',
+        'modules_count', 'memory_type', 'frequency_mhz', 'timing_cl',
+        'voltage', 'offers_count', 'latest_price',
     )
-    list_filter = ('brand', 'memory_type', 'capacity_gb')
+    list_filter = (
+        'brand', 'memory_type', 'form_factor', 'capacity_gb',
+        'ecc', 'has_expo', 'rank',
+    )
     search_fields = ('name', 'brand', 'part_number')
     inlines = [OfferInline]
 

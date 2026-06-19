@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-3evf+sk68rosfkq^ujoa^+l@gg6t8xy92s_g81s#1f@6nadw=f
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ["ramcompare.vercel.app"]
+ALLOWED_HOSTS = ["ramcompare.vercel.app", "localhost", "127.0.0.1"]
 
 
 # Application definition
@@ -41,14 +41,15 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     'products',
     'scraper',
-    'analytics',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -70,6 +71,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'products.context_processors.compare_count',
             ],
         },
     },

@@ -3,65 +3,152 @@
 {% block title %}{{ module.name }} — Мониторинг ОЗУ{% endblock %}
 
 {% block content %}
-<p><a href="{% url 'products:product_list' %}">&larr; Назад к списку</a></p>
+<!-- Back link -->
+<button onclick="history.back()" style="background:none;border:none;padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:20px;font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Назад к каталогу
+</button>
 
-<h1>{{ module.name }}</h1>
+<!-- Top layout: image col + info col -->
+<div class="pl-detail-grid">
 
-{% if module.image_url %}
-    <img src="{{ module.image_url }}" alt="{{ module.name }}" class="img-thumbnail mb-3" style="max-width: 200px; max-height: 200px;">
-{% endif %}
+    <!-- Left: plate + badges -->
+    <div>
+        <div class="pl-detail-plate">
+            {% if module.image_url %}
+                <img src="{{ module.image_url }}" alt="{{ module.name }}">
+            {% else %}
+                <svg class="pl-dimm-illus" viewBox="0 0 320 112" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:100%;max-width:280px;opacity:.28;color:var(--ink)">
+                    <rect x="6" y="14" width="308" height="74" rx="4" stroke="currentColor" stroke-width="2.5"/>
+                    <rect x="18" y="26" width="284" height="20" rx="2" stroke="currentColor" stroke-width="2"/>
+                    <g stroke="currentColor" stroke-width="2">
+                        <rect x="22" y="54" width="40" height="20" rx="1.5"/>
+                        <rect x="70" y="54" width="40" height="20" rx="1.5"/>
+                        <rect x="118" y="54" width="40" height="20" rx="1.5"/>
+                        <rect x="166" y="54" width="40" height="20" rx="1.5"/>
+                        <rect x="214" y="54" width="40" height="20" rx="1.5"/>
+                        <rect x="262" y="54" width="36" height="20" rx="1.5"/>
+                    </g>
+                    <path d="M150 88 V100 H176 V88" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+                    <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M22 92 V102"/><path d="M30 92 V102"/><path d="M38 92 V102"/><path d="M46 92 V102"/><path d="M54 92 V102"/>
+                        <path d="M62 92 V102"/><path d="M70 92 V102"/><path d="M78 92 V102"/><path d="M86 92 V102"/><path d="M94 92 V102"/>
+                        <path d="M102 92 V102"/><path d="M110 92 V102"/><path d="M118 92 V102"/><path d="M126 92 V102"/><path d="M134 92 V102"/>
+                        <path d="M192 92 V102"/><path d="M200 92 V102"/><path d="M208 92 V102"/><path d="M216 92 V102"/><path d="M224 92 V102"/>
+                        <path d="M232 92 V102"/><path d="M240 92 V102"/><path d="M248 92 V102"/><path d="M256 92 V102"/><path d="M264 92 V102"/>
+                        <path d="M272 92 V102"/><path d="M280 92 V102"/><path d="M288 92 V102"/><path d="M296 92 V102"/>
+                    </g>
+                </svg>
+            {% endif %}
+        </div>
 
-<table class="table table-sm w-auto mb-4">
-    <tr><th>Бренд</th><td>{{ module.brand }}</td></tr>
-    <tr><th>Артикул</th><td>{{ module.part_number|default:"—" }}</td></tr>
-    <tr><th>Объём</th><td>{{ module.capacity_gb }} ГБ</td></tr>
-    <tr><th>Тип памяти</th><td>{{ module.memory_type|default:"—" }}</td></tr>
-    <tr><th>Частота</th><td>{{ module.frequency_mhz|default:"—" }} МГц</td></tr>
-    <tr>
-        <th>Лучшая цена</th>
-        <td>
-            {{ module.latest_price|default:"—" }} ₽
+        <!-- Badges below plate -->
+        <div class="pl-detail-badges">
+            {% if module.memory_type %}
+                <span class="pl-badge pl-badge--accent">{{ module.memory_type }}</span>
+            {% endif %}
+            {% if module.frequency_mhz %}
+                <span class="pl-badge pl-badge--neutral">{{ module.frequency_mhz }} МГц</span>
+            {% endif %}
+            {% if module.capacity_gb %}
+                <span class="pl-badge pl-badge--neutral">{{ module.capacity_gb }} ГБ</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right: title, price, specs, compare button -->
+    <div>
+        <h1 class="pl-detail-title">{{ module.name }}</h1>
+
+        <!-- Price row -->
+        <div class="pl-detail-price-row">
+            <span class="pl-price pl-price--xl">
+                {% if module.latest_price %}{{ module.latest_price|floatformat:0 }} ₽{% else %}—{% endif %}
+            </span>
             {% with trend=module.price_trend %}
                 {% if trend.direction == 'down' %}
-                    <span class="price-trend price-trend-down ms-2">▼ {{ trend.percent|floatformat:1 }}%</span>
+                    <span class="pl-trend pl-trend--down pl-trend--lg">▼ {{ trend.percent|floatformat:1 }}%</span>
                 {% elif trend.direction == 'up' %}
-                    <span class="price-trend price-trend-up ms-2">▲ {{ trend.percent|floatformat:1 }}%</span>
+                    <span class="pl-trend pl-trend--up pl-trend--lg">▲ {{ trend.percent|floatformat:1 }}%</span>
                 {% endif %}
             {% endwith %}
-        </td>
-    </tr>
-</table>
+            <span class="pl-detail-label">лучшая цена</span>
+            <div style="flex:1"></div>
+            <a href="{% url 'products:compare' %}" class="pl-btn pl-btn--primary">
+                {% if module.pk in compare_ids %}В сравнении{% else %}В сравнение{% endif %}
+            </a>
+        </div>
 
-<h2>Предложения магазинов</h2>
-{% if offers %}
-<table class="table table-sm table-striped mb-4">
-    <thead>
-        <tr>
-            <th>Магазин</th>
-            <th>Цена</th>
-            <th>Ссылка</th>
-            <th>Обновлено</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for offer in offers %}
-        <tr>
-            <td>{{ offer.marketplace.name }}</td>
-            <td>{{ offer.latest_price|default:"—" }} ₽</td>
-            <td><a href="{{ offer.url }}" target="_blank">{{ offer.name }}</a></td>
-            <td>{{ offer.last_updated|date:"d.m.Y H:i" }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-    <p class="text-muted">Предложения не найдены.</p>
-{% endif %}
+        <!-- Specs in 2-column grid -->
+        <div class="pl-spec-grid">
+            <div class="pl-spec-row">
+                <span class="pl-spec-key">Бренд</span>
+                <span class="pl-spec-val">{{ module.brand }}</span>
+            </div>
+            {% if module.part_number %}
+            <div class="pl-spec-row">
+                <span class="pl-spec-key">Артикул</span>
+                <span class="pl-spec-val">{{ module.part_number }}</span>
+            </div>
+            {% endif %}
+            <div class="pl-spec-row">
+                <span class="pl-spec-key">Объём</span>
+                <span class="pl-spec-val">{{ module.capacity_gb }} ГБ</span>
+            </div>
+            {% if module.memory_type %}
+            <div class="pl-spec-row">
+                <span class="pl-spec-key">Тип памяти</span>
+                <span class="pl-spec-val">{{ module.memory_type }}</span>
+            </div>
+            {% endif %}
+            {% if module.frequency_mhz %}
+            <div class="pl-spec-row">
+                <span class="pl-spec-key">Частота</span>
+                <span class="pl-spec-val">{{ module.frequency_mhz }} МГц</span>
+            </div>
+            {% endif %}
+            <div class="pl-spec-row">
+                <span class="pl-spec-key">Магазинов</span>
+                <span class="pl-spec-val">{{ offers|length }}</span>
+            </div>
+        </div>
+    </div>
+</div>
 
-<h2>История цены</h2>
-{% if chart_div %}
-    {{ chart_div|safe }}
-{% else %}
-    <p class="text-muted">Недостаточно данных для построения графика.</p>
-{% endif %}
+<!-- Lower: offers card + history card side by side -->
+<div class="pl-detail-lower">
+
+    <!-- Offers card -->
+    <div class="pl-card pl-card--pad">
+        <h2 class="pl-card-title">Предложения магазинов</h2>
+        {% if offers %}
+            {% for offer in offers %}
+            <div class="pl-offer-row">
+                <span class="pl-offer-name">{{ offer.marketplace.name }}</span>
+                {% if forloop.first %}
+                    <span class="pl-badge pl-badge--down">дешевле всех</span>
+                {% endif %}
+                <div style="flex:1"></div>
+                <span class="pl-price pl-price--md">{{ offer.latest_price|default:"—" }}{% if offer.latest_price %} ₽{% endif %}</span>
+                <a href="{{ offer.url }}" target="_blank" rel="noopener" style="display:inline-flex;color:var(--ink-3);margin-left:8px" title="Открыть в магазине">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                </a>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color:var(--ink-3);font-size:var(--text-sm)">Предложения не найдены.</p>
+        {% endif %}
+    </div>
+
+    <!-- Price history card -->
+    <div class="pl-card pl-card--pad">
+        <h2 class="pl-card-title">История цены</h2>
+        <div class="pl-chart-sublabel">лучшая цена · ₽</div>
+        {% if chart_div %}
+            {{ chart_div|safe }}
+        {% else %}
+            <p style="color:var(--ink-3);font-size:var(--text-sm)">Недостаточно данных для построения графика.</p>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

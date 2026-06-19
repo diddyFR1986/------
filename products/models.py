@@ -30,16 +30,62 @@ class RAMModule(models.Model):
         (DDR5, 'DDR5'),
     ]
 
+    DIMM = 'DIMM'
+    SO_DIMM = 'SO-DIMM'
+    MINI_DIMM = 'Mini-DIMM'
+    FORM_FACTOR_CHOICES = [
+        (DIMM, 'DIMM'),
+        (SO_DIMM, 'SO-DIMM'),
+        (MINI_DIMM, 'Mini-DIMM'),
+    ]
+
+    SINGLE_RANK = '1R'
+    DUAL_RANK = '2R'
+    RANK_CHOICES = [
+        (SINGLE_RANK, 'Одноранговая'),
+        (DUAL_RANK, 'Двухранговая'),
+    ]
+
     name = models.CharField(max_length=255, verbose_name='Название')
     brand = models.CharField(max_length=100, verbose_name='Бренд')
     part_number = models.CharField(
-        max_length=100, null=True, blank=True, unique=True, verbose_name='Артикул'
+        max_length=100, null=True, blank=True,
+        unique=True, verbose_name='Артикул',
     )
     capacity_gb = models.IntegerField(verbose_name='Объём, ГБ')
-    memory_type = models.CharField(
-        max_length=10, choices=MEMORY_TYPE_CHOICES, blank=True, verbose_name='Тип памяти'
+    modules_count = models.PositiveSmallIntegerField(
+        default=1, verbose_name='Кол-во модулей'
     )
-    frequency_mhz = models.IntegerField(null=True, blank=True, verbose_name='Частота, МГц')
+    memory_type = models.CharField(
+        max_length=10, choices=MEMORY_TYPE_CHOICES,
+        blank=True, verbose_name='Тип памяти',
+    )
+    form_factor = models.CharField(
+        max_length=10, choices=FORM_FACTOR_CHOICES,
+        blank=True, verbose_name='Форм-фактор',
+    )
+    frequency_mhz = models.IntegerField(
+        null=True, blank=True, verbose_name='Частота, МГц'
+    )
+    timings = models.CharField(
+        max_length=30, blank=True, verbose_name='Тайминги'
+    )
+    timing_cl = models.PositiveSmallIntegerField(
+        null=True, blank=True, verbose_name='CAS-латентность'
+    )
+    voltage = models.DecimalField(
+        max_digits=4, decimal_places=2,
+        null=True, blank=True, verbose_name='Напряжение, В',
+    )
+    xmp_version = models.CharField(
+        max_length=10, blank=True, verbose_name='Профиль XMP'
+    )
+    has_expo = models.BooleanField(default=False, verbose_name='AMD EXPO')
+    rank = models.CharField(
+        max_length=2, choices=RANK_CHOICES,
+        blank=True, verbose_name='Ранговость',
+    )
+    ecc = models.BooleanField(default=False, verbose_name='ECC')
     image_url = models.URLField(blank=True, verbose_name='Изображение')
 
     class Meta:
@@ -55,7 +101,7 @@ class RAMModule(models.Model):
 
     @property
     def best_offer(self):
-        """Предложение с минимальной актуальной ценой среди доступных."""
+        """Предложение с минимальной актуальной ценой."""
         best = None
         best_price = None
         for offer in self.offers.all():
@@ -75,7 +121,7 @@ class RAMModule(models.Model):
 
     @property
     def price_trend(self):
-        """Изменение цены лучшего предложения по сравнению с предыдущим снимком."""
+        """Изменение цены лучшего предложения vs предыдущий снимок."""
         best = self.best_offer
         return best.price_trend if best else None
 
@@ -84,15 +130,25 @@ class Offer(models.Model):
     """Предложение конкретной площадки для модуля ОЗУ."""
 
     ram_module = models.ForeignKey(
-        RAMModule, on_delete=models.CASCADE, related_name='offers', verbose_name='Модуль ОЗУ'
+        RAMModule,
+        on_delete=models.CASCADE,
+        related_name='offers',
+        verbose_name='Модуль ОЗУ',
     )
     marketplace = models.ForeignKey(
-        Marketplace, on_delete=models.CASCADE, related_name='offers', verbose_name='Площадка'
+        Marketplace,
+        on_delete=models.CASCADE,
+        related_name='offers',
+        verbose_name='Площадка',
     )
-    external_id = models.CharField(max_length=100, verbose_name='ID товара на площадке')
+    external_id = models.CharField(
+        max_length=100, verbose_name='ID товара на площадке'
+    )
     name = models.CharField(max_length=255, verbose_name='Название')
     url = models.URLField(verbose_name='Ссылка на товар')
-    last_updated = models.DateTimeField(auto_now=True, verbose_name='Последнее обновление')
+    last_updated = models.DateTimeField(
+        auto_now=True, verbose_name='Последнее обновление'
+    )
 
     class Meta:
         verbose_name = 'Предложение'
@@ -111,7 +167,7 @@ class Offer(models.Model):
 
     @property
     def price_trend(self):
-        """Изменение цены по сравнению с предыдущим снимком: {'direction': 'up'|'down', 'percent': Decimal} либо None."""
+        """Изменение цены vs предыдущий снимок."""
         snapshots = list(self.snapshots.all())[:2]
         if len(snapshots) < 2:
             return None
@@ -124,14 +180,23 @@ class Offer(models.Model):
 
 
 class PriceSnapshot(models.Model):
-    """Снимок цены предложения на момент парсинга — формирует историю цен."""
+    """Снимок цены предложения на момент парсинга."""
 
     offer = models.ForeignKey(
-        Offer, on_delete=models.CASCADE, related_name='snapshots', verbose_name='Предложение'
+        Offer,
+        on_delete=models.CASCADE,
+        related_name='snapshots',
+        verbose_name='Предложение',
     )
-    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Цена')
-    is_available = models.BooleanField(default=True, verbose_name='В наличии')
-    scraped_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата парсинга')
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2, verbose_name='Цена'
+    )
+    is_available = models.BooleanField(
+        default=True, verbose_name='В наличии'
+    )
+    scraped_at = models.DateTimeField(
+        auto_now_add=True, verbose_name='Дата парсинга'
+    )
 
     class Meta:
         verbose_name = 'Снимок цены'
@@ -139,4 +204,7 @@ class PriceSnapshot(models.Model):
         ordering = ['-scraped_at']
 
     def __str__(self):
-        return f'{self.offer.name} — {self.price} ({self.scraped_at:%Y-%m-%d %H:%M})'
+        return (
+            f'{self.offer.name} — {self.price}'
+            f' ({self.scraped_at:%Y-%m-%d %H:%M})'
+        )

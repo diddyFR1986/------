@@ -1,201 +1,422 @@
 {% extends 'base.html' %}
 
-{% block title %}Товары — Мониторинг ОЗУ{% endblock %}
+{% block title %}Каталог — Мониторинг ОЗУ{% endblock %}
 
 {% block content %}
-<h1 class="mb-1">Модули ОЗУ</h1>
-<p class="text-muted mb-4">Найдено: {{ paginator.count }}</p>
+<!-- Title + count + burger -->
+<div class="pl-page-head" style="margin-bottom:20px">
+    <h1 class="pl-page-title">Модули ОЗУ</h1>
+    <span class="pl-page-count">Найдено: {{ paginator.count }}</span>
+    <div style="flex:1"></div>
+    <button class="pl-filter-burger" id="filter-burger" type="button"
+            aria-expanded="false" aria-controls="filter-sidebar">
+        <svg width="15" height="12" viewBox="0 0 15 12" fill="none"
+             stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+            <path d="M1 2h13M1 6h13M1 10h13"/>
+        </svg>
+        Фильтры
+    </button>
+</div>
 
-<form method="get" class="row gy-2 gx-2 align-items-end mb-4">
-    <div class="col-auto">
-        <label class="form-label">Название</label>
-        <input type="text" name="q" class="form-control" value="{{ search }}" placeholder="Поиск по названию">
-    </div>
-    <div class="col-auto">
-        <label class="form-label">Бренд</label>
-        <select name="brand" class="form-select">
-            <option value="">Все</option>
-            {% for brand in brands %}
-                <option value="{{ brand }}" {% if brand == selected_brand %}selected{% endif %}>{{ brand }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-auto">
-        <label class="form-label">Тип памяти</label>
-        <select name="memory_type" class="form-select">
-            <option value="">Все</option>
-            {% for value, label in memory_types %}
-                <option value="{{ value }}" {% if value == selected_memory_type %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-auto">
-        <label class="form-label">Объём, ГБ</label>
-        <select name="capacity" class="form-select">
-            <option value="">Все</option>
-            {% for capacity in capacities %}
-                <option value="{{ capacity }}" {% if capacity|stringformat:"s" == selected_capacity %}selected{% endif %}>{{ capacity }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-auto">
-        <label class="form-label">Частота, МГц</label>
-        <select name="frequency" class="form-select">
-            <option value="">Все</option>
-            {% for frequency in frequencies %}
-                <option value="{{ frequency }}" {% if frequency|stringformat:"s" == selected_frequency %}selected{% endif %}>{{ frequency }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-auto">
-        <label class="form-label">Площадка</label>
-        <select name="marketplace" class="form-select">
-            <option value="">Все</option>
-            {% for marketplace in marketplaces %}
-                <option value="{{ marketplace.id }}" {% if marketplace.id|stringformat:"s" == selected_marketplace %}selected{% endif %}>{{ marketplace.name }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-auto">
-        <label class="form-label">Цена от</label>
-        <input type="number" name="min_price" class="form-control" value="{{ min_price }}" min="0" style="width: 6em;">
-    </div>
-    <div class="col-auto">
-        <label class="form-label">Цена до</label>
-        <input type="number" name="max_price" class="form-control" value="{{ max_price }}" min="0" style="width: 6em;">
-    </div>
-    <div class="col-auto">
-        <label class="form-label">На странице</label>
-        <select name="page_size" class="form-select">
-            {% for size in page_size_choices %}
-                <option value="{{ size }}" {% if size == page_size %}selected{% endif %}>{{ size }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-auto">
-        <label class="form-label">Сортировка</label>
-        <select name="sort" class="form-select">
-            {% for value, label in sort_options %}
-                <option value="{{ value }}" {% if value == selected_sort %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-auto">
-        <button type="submit" class="btn btn-primary">Применить</button>
-        <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">Сбросить</a>
-    </div>
-</form>
+<div class="pl-catalog-layout">
 
-{% if modules %}
-<form id="compare-form" method="get" action="{% url 'products:compare' %}">
-<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
-    {% for module in modules %}
-    <div class="col">
-        <div class="card product-card position-relative">
-            <div class="form-check position-absolute top-0 end-0 m-2 bg-white rounded p-1" style="z-index: 1;">
-                <input class="form-check-input compare-checkbox" type="checkbox" name="ids" value="{{ module.pk }}" title="Выбрать для сравнения">
-            </div>
-            <a href="{% url 'products:product_detail' module.pk %}" class="d-block text-decoration-none text-reset">
-                <div class="card-img-wrap">
-                    {% if module.image_url %}
-                        <img src="{{ module.image_url }}" alt="{{ module.name }}">
-                    {% else %}
-                        <span class="placeholder-icon">▭</span>
-                    {% endif %}
+    <!-- Main: grid + pagination -->
+    <main class="pl-catalog-main">
+        <div class="pl-pins" style="color:var(--line);margin-bottom:20px"></div>
+
+        {% if modules %}
+        <div class="pl-grid">
+            {% for module in modules %}
+            <div class="pl-card-wrap">
+                <div class="pl-card-compare-wrap" onclick="event.stopPropagation()">
+                    <input
+                        class="pl-card-checkbox compare-checkbox"
+                        type="checkbox"
+                        value="{{ module.pk }}"
+                        data-toggle-url="{% url 'products:compare_toggle' pk=module.pk %}"
+                        data-name="{{ module.name }}"
+                        data-image="{{ module.image_url|default:'' }}"
+                        {% if module.pk in compare_ids %}checked{% endif %}
+                        title="Выбрать для сравнения"
+                    >
                 </div>
-                <div class="card-body">
-                    <h2 class="card-title">{{ module.name }}</h2>
-                    <p class="card-specs mb-2">
-                        {{ module.brand }} · {{ module.capacity_gb }} ГБ
-                        {% if module.memory_type %}
-                            · <span class="badge bg-light text-dark">{{ module.memory_type }}</span>
+
+                <a href="{% url 'products:product_detail' module.pk %}" class="pl-product-card">
+                    <div class="pl-card-plate">
+                        {% if module.image_url %}
+                            <img src="{{ module.image_url }}" alt="{{ module.name }}">
+                        {% else %}
+                            <span class="pl-card-noimg">Нет фото</span>
                         {% endif %}
-                        {% if module.frequency_mhz %}· {{ module.frequency_mhz }} МГц{% endif %}
-                    </p>
-                    <div class="d-flex align-items-center justify-content-between">
-                        <span class="card-price">
-                            {% if module.min_price %}{{ module.min_price|floatformat:0 }} ₽{% else %}—{% endif %}
-                        </span>
-                        {% with trend=module.price_trend %}
-                            {% if trend.direction == 'down' %}
-                                <span class="price-trend price-trend-down">▼ {{ trend.percent|floatformat:1 }}%</span>
-                            {% elif trend.direction == 'up' %}
-                                <span class="price-trend price-trend-up">▲ {{ trend.percent|floatformat:1 }}%</span>
-                            {% endif %}
-                        {% endwith %}
                     </div>
-                    <p class="card-specs mt-2 mb-0">Магазинов: {{ module.offers_count_annotated }}</p>
+
+                    <div class="pl-card-body">
+                        <div class="pl-card-badges">
+                            {% if module.memory_type %}
+                                <span class="pl-badge pl-badge--accent">{{ module.memory_type }}</span>
+                            {% endif %}
+                            {% if module.frequency_mhz %}
+                                <span class="pl-badge pl-badge--neutral">{{ module.frequency_mhz }} МГц</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="pl-card-name">{{ module.name }}</div>
+
+                        <div class="pl-card-meta">
+                            {{ module.brand }} · {{ module.capacity_gb }} ГБ
+                        </div>
+
+                        <div class="pl-card-price-row">
+                            <span class="pl-price pl-price--lg">
+                                {% if module.min_price %}{{ module.min_price|floatformat:0 }} ₽{% else %}—{% endif %}
+                            </span>
+                            {% with trend=module.price_trend %}
+                                {% if trend.direction == 'down' %}
+                                    <span class="pl-trend pl-trend--down pl-trend--sm">▼ {{ trend.percent|floatformat:1 }}%</span>
+                                {% elif trend.direction == 'up' %}
+                                    <span class="pl-trend pl-trend--up pl-trend--sm">▲ {{ trend.percent|floatformat:1 }}%</span>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+
+                        <div class="pl-card-stores">{{ module.offers_count_annotated }} магазинов</div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <div class="pl-empty">
+            Товары не найдены. Нажмите «Обновить данные», чтобы запустить парсинг.
+        </div>
+        {% endif %}
+
+        <!-- Pagination -->
+        {% if paginator.num_pages > 1 %}
+        <nav class="pl-pagination" aria-label="Страницы">
+            {% if page_obj.has_previous %}
+                <a class="pl-pag-item" href="?{{ query_params }}&page=1">«</a>
+                <a class="pl-pag-item" href="?{{ query_params }}&page={{ page_obj.previous_page_number }}">‹</a>
+            {% else %}
+                <span class="pl-pag-item pl-pag-item--off">«</span>
+                <span class="pl-pag-item pl-pag-item--off">‹</span>
+            {% endif %}
+            <span class="pl-pag-info">Стр. {{ page_obj.number }} из {{ paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a class="pl-pag-item" href="?{{ query_params }}&page={{ page_obj.next_page_number }}">›</a>
+                <a class="pl-pag-item" href="?{{ query_params }}&page={{ paginator.num_pages }}">»</a>
+            {% else %}
+                <span class="pl-pag-item pl-pag-item--off">›</span>
+                <span class="pl-pag-item pl-pag-item--off">»</span>
+            {% endif %}
+        </nav>
+        {% endif %}
+    </main>
+
+    <!-- Filter sidebar -->
+    <aside class="pl-filter-sidebar" id="filter-sidebar">
+        <div class="pl-filter-sidebar__inner">
+            <!-- Mobile header with close button -->
+            <div class="pl-filter-sidebar__head">
+                <span class="pl-filter-sidebar__title">Фильтры</span>
+                <button class="pl-filter-close" id="filter-close" type="button" aria-label="Закрыть">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.25" stroke-linecap="round">
+                        <path d="M18 6 6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form method="get" class="pl-filter-form" style="display:contents">
+
+                <!-- Search -->
+                <div class="pl-field">
+                    <span class="pl-field-label">Поиск</span>
+                    <div class="pl-input-wrap">
+                        <span class="pl-input-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="1.75"
+                                 stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+                            </svg>
+                        </span>
+                        <input type="text" name="q" class="pl-input"
+                               value="{{ search }}" placeholder="Название модуля">
+                    </div>
                 </div>
-            </a>
+
+                <!-- Brand checkboxes -->
+                <div class="pl-field">
+                    <span class="pl-field-label">Бренд</span>
+                    <div class="pl-brand-list">
+                        {% for brand in brands %}
+                        <label class="pl-brand-item">
+                            <input type="checkbox" name="brand" value="{{ brand }}"
+                                   {% if brand in selected_brands %}checked{% endif %}>
+                            <span>{{ brand }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Memory type -->
+                <div class="pl-field">
+                    <span class="pl-field-label">Тип памяти</span>
+                    <select name="memory_type" class="pl-select">
+                        <option value="">Все</option>
+                        {% for value, label in memory_types %}
+                            <option value="{{ value }}"
+                                {% if value == selected_memory_type %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Capacity range -->
+                <div class="pl-field-group">
+                    <span class="pl-field-label">Объём, ГБ</span>
+                    <div class="pl-field-group__inputs">
+                        <input type="number" name="capacity_min" class="pl-input"
+                               value="{{ capacity_min }}" placeholder="от" min="0">
+                        <span class="pl-field-group__sep">—</span>
+                        <input type="number" name="capacity_max" class="pl-input"
+                               value="{{ capacity_max }}" placeholder="до" min="0">
+                    </div>
+                </div>
+
+                <!-- Frequency range -->
+                <div class="pl-field-group">
+                    <span class="pl-field-label">Частота, МГц</span>
+                    <div class="pl-field-group__inputs">
+                        <input type="number" name="frequency_min" class="pl-input"
+                               value="{{ frequency_min }}" placeholder="от" min="0">
+                        <span class="pl-field-group__sep">—</span>
+                        <input type="number" name="frequency_max" class="pl-input"
+                               value="{{ frequency_max }}" placeholder="до" min="0">
+                    </div>
+                </div>
+
+                <!-- Marketplace -->
+                <div class="pl-field">
+                    <span class="pl-field-label">Площадка</span>
+                    <select name="marketplace" class="pl-select">
+                        <option value="">Все</option>
+                        {% for marketplace in marketplaces %}
+                            <option value="{{ marketplace.id }}"
+                                {% if marketplace.id|stringformat:"s" == selected_marketplace %}selected{% endif %}>
+                                {{ marketplace.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Price range -->
+                <div class="pl-field-group">
+                    <span class="pl-field-label">Цена, ₽</span>
+                    <div class="pl-field-group__inputs">
+                        <input type="number" name="min_price" class="pl-input"
+                               value="{{ min_price }}" placeholder="от" min="0">
+                        <span class="pl-field-group__sep">—</span>
+                        <input type="number" name="max_price" class="pl-input"
+                               value="{{ max_price }}" placeholder="до" min="0">
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="pl-pins" style="color:var(--line)"></div>
+
+                <!-- Sort -->
+                <div class="pl-field">
+                    <span class="pl-field-label">Сортировка</span>
+                    <select name="sort" class="pl-select">
+                        {% for value, label in sort_options %}
+                            <option value="{{ value }}"
+                                {% if value == selected_sort %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Per page -->
+                <div class="pl-field">
+                    <span class="pl-field-label">На странице</span>
+                    <select name="page_size" class="pl-select">
+                        {% for size in page_size_choices %}
+                            <option value="{{ size }}"
+                                {% if size == page_size %}selected{% endif %}>{{ size }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Actions -->
+                <div style="display:flex;gap:8px">
+                    <button type="submit" class="pl-btn pl-btn--primary" style="flex:1">Применить</button>
+                    <a href="{% url 'products:product_list' %}" class="pl-btn pl-btn--ghost">Сбросить</a>
+                </div>
+
+            </form>
+        </div>
+    </aside>
+</div>
+
+<!-- Mobile backdrop -->
+<div class="pl-filter-overlay" id="filter-overlay"></div>
+
+<!-- Toast notification -->
+<div class="pl-toast" id="compare-toast"></div>
+
+<!-- Compare bar -->
+<div class="pl-compare-bar" id="compare-bar">
+    <div class="pl-compare-bar__inner">
+        <span class="pl-compare-bar__label">Сравнение</span>
+        <div class="pl-compare-bar__slots" id="compare-bar-slots">
+            <div class="pl-compare-slot" id="compare-slot-0">
+                <span class="pl-compare-slot__empty">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                </span>
+            </div>
+            <div class="pl-compare-slot" id="compare-slot-1">
+                <span class="pl-compare-slot__empty">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                </span>
+            </div>
+            <div class="pl-compare-slot" id="compare-slot-2">
+                <span class="pl-compare-slot__empty">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                </span>
+            </div>
+            <div class="pl-compare-slot" id="compare-slot-3">
+                <span class="pl-compare-slot__empty">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                </span>
+            </div>
+        </div>
+        <div class="pl-compare-bar__actions">
+            <a href="{% url 'products:compare' %}" class="pl-btn pl-btn--primary">Сравнить</a>
+            <form method="post" action="{% url 'products:compare_clear' %}" style="margin:0">
+                {% csrf_token %}
+                <button type="submit" class="pl-btn pl-btn--ghost">Очистить</button>
+            </form>
         </div>
     </div>
-    {% endfor %}
 </div>
-<button type="submit" id="compare-submit" class="btn btn-primary position-fixed bottom-0 end-0 m-4" disabled>
-    Сравнить (0)
-</button>
-</form>
-{% else %}
-<p class="text-center text-muted">
-    Товары не найдены. Нажмите «Обновить данные», чтобы запустить парсинг.
-</p>
-{% endif %}
+{% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    var checkboxes = document.querySelectorAll('.compare-checkbox');
-    var submitBtn = document.getElementById('compare-submit');
-    if (!submitBtn) return;
-
-    function update() {
-        var checked = document.querySelectorAll('.compare-checkbox:checked');
-        checkboxes.forEach(function (cb) {
-            cb.disabled = checked.length >= 4 && !cb.checked;
-        });
-        submitBtn.disabled = checked.length < 2 || checked.length > 4;
-        submitBtn.textContent = 'Сравнить (' + checked.length + ')';
+    /* ---- Compare checkboxes ---- */
+    function getCookie(name) {
+        var v = '; ' + document.cookie, p = v.split('; ' + name + '=');
+        if (p.length === 2) return p.pop().split(';').shift();
     }
 
-    checkboxes.forEach(function (cb) {
-        cb.addEventListener('change', update);
+    /* ---- Compare bar ---- */
+    var compareBar = document.getElementById('compare-bar');
+
+    // Map pk → {name, image} for checked boxes on this page
+    var productData = {};
+    document.querySelectorAll('.compare-checkbox').forEach(function (cb) {
+        productData[cb.value] = { name: cb.dataset.name, image: cb.dataset.image };
     });
-    update();
+
+    // Ordered list of selected pks (session order matters for slots)
+    var selectedIds = [];
+    document.querySelectorAll('.compare-checkbox:checked').forEach(function (cb) {
+        selectedIds.push(parseInt(cb.value));
+    });
+
+    function renderSlot(slot, pk) {
+        if (pk == null) {
+            slot.classList.remove('is-filled');
+            slot.innerHTML = '<span class="pl-compare-slot__empty"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>';
+        } else {
+            slot.classList.add('is-filled');
+            var info = productData[pk] || {};
+            if (info.image) {
+                slot.innerHTML = '<img src="' + info.image + '" alt="">';
+            } else {
+                slot.innerHTML = '<svg width="22" height="16" viewBox="0 0 22 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><rect x="1" y="2" width="20" height="10" rx="1"/><path d="M1 6h20"/><path d="M8 12v2H5v1M17 12v2h-3v1"/></svg>';
+            }
+        }
+    }
+
+    function updateBar(ids) {
+        selectedIds = ids.slice();
+        for (var i = 0; i < 4; i++) {
+            var slot = document.getElementById('compare-slot-' + i);
+            renderSlot(slot, ids[i] != null ? ids[i] : null);
+        }
+        if (ids.length > 0) {
+            compareBar.classList.add('is-visible');
+        } else {
+            compareBar.classList.remove('is-visible');
+        }
+    }
+
+    // Initial render from session
+    updateBar(selectedIds);
+
+    /* ---- Toast ---- */
+    var toast = document.getElementById('compare-toast');
+    var toastTimer = null;
+
+    function showToast(added) {
+        toast.innerHTML = added ? 'Добавлено в сравнение' : 'Убрано из сравнения';
+        toast.classList.add('is-visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toast.classList.remove('is-visible'); }, 2500);
+    }
+
+    /* ---- Checkboxes ---- */
+    if (document.querySelectorAll('.compare-checkbox:checked').length >= 4) {
+        document.querySelectorAll('.compare-checkbox:not(:checked)').forEach(function (cb) { cb.disabled = true; });
+    }
+
+    document.querySelectorAll('.compare-checkbox').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            var checkbox = this, wasChecked = !checkbox.checked;
+            checkbox.disabled = true;
+            fetch(checkbox.dataset.toggleUrl, {
+                method: 'POST',
+                headers: {'X-CSRFToken': getCookie('csrftoken')},
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var pk = parseInt(checkbox.value);
+                checkbox.checked = data.ids.includes(pk);
+                document.querySelectorAll('.compare-checkbox').forEach(function (c) {
+                    c.disabled = data.ids.length >= 4 && !c.checked;
+                });
+                updateBar(data.ids);
+                showToast(checkbox.checked);
+            })
+            .catch(function () { checkbox.checked = wasChecked; checkbox.disabled = false; });
+        });
+    });
+
+    /* ---- Filter sidebar burger ---- */
+    var burger  = document.getElementById('filter-burger');
+    var sidebar = document.getElementById('filter-sidebar');
+    var overlay = document.getElementById('filter-overlay');
+    var closeBtn = document.getElementById('filter-close');
+
+    function openSidebar() {
+        sidebar.classList.add('is-open');
+        overlay.classList.add('is-open');
+        burger.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('is-open');
+        overlay.classList.remove('is-open');
+        burger.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+    }
+
+    if (burger)   burger.addEventListener('click', openSidebar);
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+    if (overlay)  overlay.addEventListener('click', closeSidebar);
 });
 </script>
-{% endblock %}
-
-{% if paginator.num_pages > 1 %}
-<nav aria-label="Страницы">
-    <ul class="pagination">
-        {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?{{ query_params }}&page=1">«</a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?{{ query_params }}&page={{ page_obj.previous_page_number }}">‹</a>
-            </li>
-        {% else %}
-            <li class="page-item disabled"><span class="page-link">«</span></li>
-            <li class="page-item disabled"><span class="page-link">‹</span></li>
-        {% endif %}
-
-        <li class="page-item disabled">
-            <span class="page-link">Стр. {{ page_obj.number }} из {{ paginator.num_pages }}</span>
-        </li>
-
-        {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?{{ query_params }}&page={{ page_obj.next_page_number }}">›</a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?{{ query_params }}&page={{ paginator.num_pages }}">»</a>
-            </li>
-        {% else %}
-            <li class="page-item disabled"><span class="page-link">›</span></li>
-            <li class="page-item disabled"><span class="page-link">»</span></li>
-        {% endif %}
-    </ul>
-</nav>
-{% endif %}
 {% endblock %}

@@ -3,59 +3,148 @@
 {% block title %}Сравнение модулей — Мониторинг ОЗУ{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Сравнение модулей ОЗУ</h1>
-
 {% if error %}
-    <p class="text-muted">{{ error }}</p>
-    <a href="{% url 'products:product_list' %}" class="btn btn-outline-primary">Назад к каталогу</a>
-{% else %}
-<div class="table-responsive">
-<table class="table table-bordered align-middle bg-white">
-    <thead>
-        <tr>
-            <th></th>
-            {% for module in modules %}
-            <th style="min-width: 200px;">
-                {% if module.image_url %}
-                    <img src="{{ module.image_url }}" alt="{{ module.name }}" style="max-height: 80px; max-width: 100%; object-fit: contain;"><br>
-                {% endif %}
-                <a href="{% url 'products:product_detail' module.pk %}">{{ module.name }}</a>
-            </th>
-            {% endfor %}
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <th>Бренд</th>
-            {% for module in modules %}<td>{{ module.brand }}</td>{% endfor %}
-        </tr>
-        <tr>
-            <th>Объём</th>
-            {% for module in modules %}<td>{{ module.capacity_gb }} ГБ</td>{% endfor %}
-        </tr>
-        <tr>
-            <th>Тип памяти</th>
-            {% for module in modules %}<td>{{ module.memory_type|default:"—" }}</td>{% endfor %}
-        </tr>
-        <tr>
-            <th>Частота</th>
-            {% for module in modules %}<td>{{ module.frequency_mhz|default:"—" }} МГц</td>{% endfor %}
-        </tr>
-        <tr>
-            <th>Лучшая цена</th>
-            {% for module in modules %}<td><strong>{{ module.latest_price|default:"—" }} ₽</strong></td>{% endfor %}
-        </tr>
-        {% for row in marketplace_rows %}
-        <tr>
-            <th>{{ row.marketplace.name }}</th>
-            {% for price in row.cells %}
-                <td>{% if price %}{{ price }} ₽{% else %}—{% endif %}</td>
-            {% endfor %}
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<!-- Empty compare state -->
+<div style="max-width:480px">
+    <h1 class="pl-page-title" style="margin-bottom:12px">Сравнение модулей</h1>
+    <p style="font-size:var(--text-base);color:var(--ink-2);margin-bottom:20px;line-height:var(--lh-relaxed,1.6)">
+        Выберите от 2 до 4 модулей в каталоге, чтобы сравнить их характеристики и цены по магазинам.
+    </p>
+    <div style="display:flex;gap:8px">
+        <a href="{% url 'products:product_list' %}" class="pl-btn pl-btn--primary">Перейти в каталог</a>
+        <form method="post" action="{% url 'products:compare_clear' %}" style="display:inline">
+            {% csrf_token %}
+            <button type="submit" class="pl-btn pl-btn--danger">Очистить список</button>
+        </form>
+    </div>
 </div>
-<a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">Назад к каталогу</a>
+{% else %}
+
+<!-- Header row -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+    <h1 class="pl-page-title">Сравнение модулей</h1>
+    <form method="post" action="{% url 'products:compare_clear' %}">
+        {% csrf_token %}
+        <button type="submit" class="pl-btn pl-btn--danger pl-btn--sm">Очистить список</button>
+    </form>
+</div>
+
+<div class="pl-card" style="overflow:hidden">
+    <div class="pl-compare-wrap">
+        <table class="pl-compare-table">
+            <thead style="position:sticky;top:0;z-index:10;background:var(--surface)">
+                <tr>
+                    <th class="pl-compare-td pl-compare-th-row" style="background:var(--surface)"></th>
+                    {% for module in modules %}
+                    <td class="pl-compare-td" style="min-width:180px;vertical-align:top">
+                        <svg class="pl-compare-dimm" viewBox="0 0 320 112" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Модуль памяти">
+                            <rect x="6" y="14" width="308" height="74" rx="4" stroke="currentColor" stroke-width="2.5"/>
+                            <rect x="18" y="26" width="284" height="20" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <g stroke="currentColor" stroke-width="2">
+                                <rect x="22" y="54" width="40" height="20" rx="1.5"/>
+                                <rect x="70" y="54" width="40" height="20" rx="1.5"/>
+                                <rect x="118" y="54" width="40" height="20" rx="1.5"/>
+                                <rect x="166" y="54" width="40" height="20" rx="1.5"/>
+                                <rect x="214" y="54" width="40" height="20" rx="1.5"/>
+                                <rect x="262" y="54" width="36" height="20" rx="1.5"/>
+                            </g>
+                            <path d="M150 88 V100 H176 V88" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+                            <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <path d="M22 92 V102"/><path d="M30 92 V102"/><path d="M38 92 V102"/><path d="M46 92 V102"/><path d="M54 92 V102"/>
+                                <path d="M62 92 V102"/><path d="M70 92 V102"/><path d="M78 92 V102"/><path d="M86 92 V102"/><path d="M94 92 V102"/>
+                                <path d="M102 92 V102"/><path d="M110 92 V102"/><path d="M118 92 V102"/><path d="M126 92 V102"/><path d="M134 92 V102"/>
+                                <path d="M192 92 V102"/><path d="M200 92 V102"/><path d="M208 92 V102"/><path d="M216 92 V102"/><path d="M224 92 V102"/>
+                                <path d="M232 92 V102"/><path d="M240 92 V102"/><path d="M248 92 V102"/><path d="M256 92 V102"/><path d="M264 92 V102"/>
+                                <path d="M272 92 V102"/><path d="M280 92 V102"/><path d="M288 92 V102"/><path d="M296 92 V102"/>
+                            </g>
+                        </svg>
+                        <a href="{% url 'products:product_detail' module.pk %}" class="pl-compare-module">{{ module.name }}</a>
+                        <form method="post"
+                              action="{% url 'products:compare_remove' module.pk %}"
+                              style="display:block;margin-top:6px">
+                            {% csrf_token %}
+                            <button type="submit" class="pl-btn pl-btn--sm"
+                                    style="font-size:var(--text-xs);padding:2px 8px;color:var(--ink-2)">
+                                ✕ Убрать
+                            </button>
+                        </form>
+                    </td>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th class="pl-compare-td pl-compare-th-row">Бренд</th>
+                    {% for module in modules %}
+                    <td class="pl-compare-td"><span style="font-family:var(--font-mono);font-size:var(--text-sm)">{{ module.brand }}</span></td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <th class="pl-compare-td pl-compare-th-row">Объём</th>
+                    {% for module in modules %}
+                    <td class="pl-compare-td{% if module.pk in best_cap_ids %} pl-compare-best-cell{% endif %}">
+                        <span style="font-family:var(--font-mono);font-size:var(--text-sm)">{{ module.capacity_gb }} ГБ</span>
+                        {% if module.pk in best_cap_ids %}
+                            <div style="margin-top:4px"><span class="pl-badge pl-badge--down">максимум</span></div>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <th class="pl-compare-td pl-compare-th-row">Тип</th>
+                    {% for module in modules %}
+                    <td class="pl-compare-td">
+                        {% if module.memory_type %}<span class="pl-badge pl-badge--accent">{{ module.memory_type }}</span>{% else %}—{% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <th class="pl-compare-td pl-compare-th-row">Частота</th>
+                    {% for module in modules %}
+                    <td class="pl-compare-td{% if module.pk in best_freq_ids %} pl-compare-best-cell{% endif %}">
+                        <span style="font-family:var(--font-mono);font-size:var(--text-sm)">
+                            {% if module.frequency_mhz %}{{ module.frequency_mhz }} МГц{% else %}—{% endif %}
+                        </span>
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <th class="pl-compare-td pl-compare-th-row">Лучшая цена</th>
+                    {% for module in modules %}
+                    <td class="pl-compare-td{% if module.pk in cheapest_ids %} pl-compare-best-cell{% endif %}">
+                        <span class="pl-price pl-price--lg">{% if module.latest_price %}{{ module.latest_price|floatformat:0 }} ₽{% else %}—{% endif %}</span>
+                        {% if module.pk in cheapest_ids %}
+                            <div style="margin-top:4px"><span class="pl-badge pl-badge--down">минимум</span></div>
+                        {% endif %}
+                        {% with trend=module.price_trend %}
+                            {% if trend.direction == 'down' %}
+                                <div><span class="price-trend price-trend-down">▼ {{ trend.percent|floatformat:1 }}%</span></div>
+                            {% elif trend.direction == 'up' %}
+                                <div><span class="price-trend price-trend-up">▲ {{ trend.percent|floatformat:1 }}%</span></div>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% for row in marketplace_rows %}
+                <tr>
+                    <th class="pl-compare-td pl-compare-th-row">{{ row.marketplace.name }}</th>
+                    {% for cell in row.cells %}
+                        <td class="pl-compare-td{% if cell.is_best %} pl-compare-best-cell{% endif %}">
+                            {% if cell.price %}
+                                <span class="{% if cell.is_best %}pl-compare-best-price{% else %}pl-compare-price{% endif %}">
+                                    {{ cell.price|floatformat:0 }} ₽
+                                </span>
+                            {% else %}
+                                <span class="pl-compare-none">—</span>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endif %}
 {% endblock %}
